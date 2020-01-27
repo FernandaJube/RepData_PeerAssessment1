@@ -1,0 +1,93 @@
+---
+title: "PA1_Assessment"
+author: "FJube"
+date: "26/01/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Activity Monitoring
+This is a report regarding the activities monitorized by a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+These are the questions I aim to answer: 
+What is mean total number of steps taken per day? 
+What is the average daily activity pattern? 
+Are there differences in activity patterns between weekdays and weekends?
+
+## Loading the data
+```{r reading,echo=TRUE}
+dataactivity<-read.csv("activity.csv")
+```
+
+## What is mean total number of steps taken per day? 
+```{r hist,echo=TRUE}
+q1<-aggregate(steps~date,dataactivity,steps)
+hist(q1$steps,main = "Steps per day",xlab="Steps",ylab = "Freq")
+```
+```{r summary,echo=TRUE}
+summary(q1$steps)
+```
+Steps per day with
+## What is the average daily activity pattern?
+```{r plot,echo=TRUE}
+q2<-aggregate(steps~interval,dataactivity,mean)
+plot(q2$interval,q2$steps,type="l",main="Daily Activity Pattern",xlab = "Interval",ylab = "Average Steps")
+```
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps? 
+The interval 835:
+```{r max,echo=TRUE}
+summary(q2$steps)
+subset(q2,steps>206)
+```
+## Imputing NA values
+Total number of NAs in the dataset:
+```{r NA,echo=TRUE}
+colSums(is.na(dataactivity))
+```
+New dataset - "NA_filled" - with the missng data filled in -- Strategy for filling in all of the missing values in the datase using the mean for the 5-minute interval:
+```{r filled,echo=TRUE}
+NA_filled<-dataactivity
+for (i in which(sapply(NA_filled, is.numeric))) {
+    for (j in which(is.na(NA_filled[, i]))) {
+        NA_filled[j, i] <- mean(NA_filled[NA_filled[, "interval"] == NA_filled[j, "interval"], i],  na.rm = TRUE)
+    }
+}
+head(NA_filled)
+```
+
+Steps per day without missing values
+```{r nona,echo=TRUE}
+NA_filledsum<-aggregate(steps~date,NA_filled,sum)
+
+hist(NA_filledsum$steps,main = "Steps per day -NA",xlab="Steps",ylab = "Freq")
+```
+
+Mean and median of the steps per day without missing values
+```{r meanNA,echo=TRUE}
+summary(NA_filledsum$steps)
+```
+
+ Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+The mean didn't change but the median changed in 1 step of difference.
+
+## Are there differences in activity patterns between weekdays and weekends?
+ New factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day:
+```{r weekday,echo=TRUE}
+library(lubridate)
+NA_filled$date<-as.Date(NA_filled$date)
+NA_filled$day <-ifelse(as.POSIXlt( NA_filled$date)$wday %in% c(0,6), "Weekend", "Weekday")
+head(NA_filled)
+```
+Average number of steps per weekend/weekday:
+```{r plot4,echo=TRUE}
+NA_filledmean<-aggregate(steps~interval + day,NA_filled,mean)
+library(ggplot2)
+ggplot(NA_filledmean, aes(interval, steps)) + geom_line() + facet_grid(day ~ .) + xlab("interval") + ylab("number of steps")
+```
+
+
+## 
+
